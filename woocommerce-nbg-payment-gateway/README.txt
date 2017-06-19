@@ -1,9 +1,9 @@
 === National Bank of Greece Payment Gateway for Woocommerce ===
 Contributors: mpbm23, emspacegr
 Tags: ecommerce, woocommerce, payment gateway
-Tested up to: 4.3.1
+Tested up to: 4.5.1
 Requires at least: 4.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 Adds National Bank of Greece as a payment Gateway for Woocommerce
@@ -29,5 +29,8 @@ Add the Username and password provided by the bank.
 Yes
 
 == Changelog ==
+= 1.0.1 =
+Renamed Simple XML element to avoid redeclaring errors
+
 = 1.0.0 =
 Initial Release

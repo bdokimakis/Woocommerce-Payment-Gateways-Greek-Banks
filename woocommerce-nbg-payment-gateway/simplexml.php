@@ -1,5 +1,5 @@
 <?php
-class SimpleXMLExtended extends SimpleXMLElement
+class nbg_SimpleXMLExtended extends SimpleXMLElement
   {
    
   public function addCData($cdata_text)

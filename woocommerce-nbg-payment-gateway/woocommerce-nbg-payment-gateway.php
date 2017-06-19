@@ -3,7 +3,7 @@
   Plugin Name: National Bank Greece WooCommerce Payment Gateway
   Plugin URI: http://emspace.gr
   Description: National Bank Greece Payment Gateway allows you to accept payment through various channels such as Maestro, Mastercard and Visa cards On your Woocommerce Powered Site.
-  Version: 1.0.0
+  Version: 1.0.1
   Author: emspace.gr
   Author URI: http://emspace.gr
   License: GPL-3.0+
@@ -200,7 +200,7 @@ function woocommerce_nbg_init() {
 			if ($this->mode == "yes") 
 			{//test mode
 			$post_url = 'https://accreditation.datacash.com/Transaction/acq_a';
-			$page_set_id = '44'	;
+			$page_set_id = '243'	;
 			/*
 			HPS - HCC  pagesets  - without Installments  (TEST)
 			41-NBG-HPS-WithoutInstallmentGRK
@@ -215,7 +215,7 @@ function woocommerce_nbg_init() {
 			 else
 			 { //live mode
 			 $post_url ='https://mars.transaction.datacash.com/Transaction';			 
-			 $page_set_id='1438';
+			 $page_set_id='3366';
 			 /*
 			 HPS-HCC pagesets  - without Installments (LIVE)
 			 1300-NBG_Without_Installment_Greek
@@ -239,7 +239,7 @@ function woocommerce_nbg_init() {
 			
 			//make XML
 			
-			$xml = new SimpleXMLExtended('<?xml version="1.0" encoding="utf-8"?><Request version="2"/>');
+			$xml = new nbg_SimpleXMLExtended('<?xml version="1.0" encoding="utf-8"?><Request version="2"/>');
 			
 			$authentication =   $xml->addChild('Authentication');			
 			$authentication->addChild('password', $this->nbg_Password);
@@ -266,10 +266,11 @@ function woocommerce_nbg_init() {
 					$return_url_str= get_site_url()."?wc-api=WC_NBG_gateway".htmlspecialchars('&')."nbg=success&amp;MerchantReference=".$merchantreference;
 					$HpsTxn->addChild('return_url',$return_url_str);
 					$HpsTxn->addChild('expiry_url', get_site_url().'?wc-api=WC_NBG_gateway'.htmlspecialchars('&').'nbg=cancel');
+					$HpsTxn->addChild('error_url', get_site_url().'?wc-api=WC_NBG_gateway'.htmlspecialchars('&').'nbg=error');
 					$HpsTxn->addChild('page_set_id', $page_set_id);
 					$DynamicData = $HpsTxn->addChild('DynamicData');
-						$DynamicData->dyn_data_4=NULL;
-						$DynamicData->dyn_data_4->addCData($this->nbg_installments);
+						$DynamicData->dyn_data_2=NULL;
+						$DynamicData->dyn_data_2->addCData('{"lang":"el", "merchantName":"' . get_bloginfo('name') . '", "backUrl":"' . $woocommerce->cart->get_checkout_url() . '"}');
 						
 				$CardTxn=$transaction->addChild('CardTxn');
 					$CardTxn->addChild('method', $method);
@@ -283,7 +284,7 @@ function woocommerce_nbg_init() {
     curl_setopt($ch, CURLOPT_HTTPHEADER, Array("Content-Type: text/xml"));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_NOPROGRESS, 0);
-	
+		
     $result = curl_exec ($ch); // result will contain XML reply 
     curl_close ($ch);
     if ( $result == false )
@@ -293,7 +294,6 @@ function woocommerce_nbg_init() {
 
 	//receive response and parse xml
 	$response = simplexml_load_string($result);
-	
 
 	if ($response->status !=1)
 	{
@@ -303,7 +303,6 @@ function woocommerce_nbg_init() {
 	{	
 		//If response success save data in DB and redirect
 		$wpdb->insert($wpdb->prefix . 'nbg_transactions', array('reference' => $response->datacash_reference,'merchantreference'=> $merchantreference , 'orderid' => $order_id, 'timestamp' => current_time('mysql', 1)));
-		
 		
 		$requesturl = $response->HpsTxn->hps_url.'?HPS_SessionID='.$response->HpsTxn->session_id;
 		
@@ -387,7 +386,7 @@ function woocommerce_nbg_init() {
 				$ref = $wpdb->get_results($ttquery);
 				$orderid=$ref['0']->orderid;
 			
-			$xml = new SimpleXMLExtended('<?xml version="1.0" encoding="utf-8"?><Request version="2"/>');
+			$xml = new nbg_SimpleXMLExtended('<?xml version="1.0" encoding="utf-8"?><Request version="2"/>');
 				
 				$authentication =   $xml->addChild('Authentication');			
 				$authentication->addChild('password', $this->nbg_Password);
@@ -434,6 +433,8 @@ function woocommerce_nbg_init() {
 		
 				if(strcmp($response->reason,'ACCEPTED')==0)
 				{
+				
+				$trans_id = $response -> merchantreference;
 				
 				//verified - successful payment
 				//complete order			
@@ -565,8 +566,7 @@ function woocommerce_nbg_init() {
 
     function nbg_message() {
         $order_id = absint(get_query_var('order-received'));
-        $order = new WC_Order($order_id);
-        $payment_method = $order->payment_method;
+        $payment_method = wc_get_payment_gateway_by_order($order_id);
 
         if (is_order_received_page() && ( 'nbg_gateway' == $payment_method )) {
 
